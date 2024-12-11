@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AsyncNet9.Tests", "AsyncNet9.Tests\AsyncNet9.Tests.csproj", "{4A61D0BD-2301-4EAB-89A7-7F3BCD12E524}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AsyncAwait", "AsyncAwait\AsyncAwait.csproj", "{71E905A9-5526-4650-84BD-D199F145D29C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -8,9 +8,9 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{4A61D0BD-2301-4EAB-89A7-7F3BCD12E524}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4A61D0BD-2301-4EAB-89A7-7F3BCD12E524}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4A61D0BD-2301-4EAB-89A7-7F3BCD12E524}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4A61D0BD-2301-4EAB-89A7-7F3BCD12E524}.Release|Any CPU.Build.0 = Release|Any CPU
+		{71E905A9-5526-4650-84BD-D199F145D29C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{71E905A9-5526-4650-84BD-D199F145D29C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{71E905A9-5526-4650-84BD-D199F145D29C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{71E905A9-5526-4650-84BD-D199F145D29C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

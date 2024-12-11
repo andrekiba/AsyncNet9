@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace AsyncNet9.Tests;
+namespace AsyncAwait;
 
 public class AsyncAwaitStateMachine
 {
