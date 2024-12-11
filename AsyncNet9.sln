@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AsyncAwait", "AsyncAwait\AsyncAwait.csproj", "{71E905A9-5526-4650-84BD-D199F145D29C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SyncContext", "SyncContext\SyncContext.csproj", "{095715FB-4E7C-48AD-8856-38946872EBAC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{71E905A9-5526-4650-84BD-D199F145D29C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{71E905A9-5526-4650-84BD-D199F145D29C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{71E905A9-5526-4650-84BD-D199F145D29C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{095715FB-4E7C-48AD-8856-38946872EBAC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{095715FB-4E7C-48AD-8856-38946872EBAC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{095715FB-4E7C-48AD-8856-38946872EBAC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{095715FB-4E7C-48AD-8856-38946872EBAC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
