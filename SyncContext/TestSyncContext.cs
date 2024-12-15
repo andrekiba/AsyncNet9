@@ -78,7 +78,7 @@ namespace SyncContext;
             var d = new Dictionary<int, int>();
             for (var i = 0; i < 10000; i++)
             {
-                var id = Thread.CurrentThread.ManagedThreadId;
+                var id = Environment.CurrentManagedThreadId;
                 d[id] = d.TryGetValue(id, out var count) ? count+1 : 1;
  
                 await Task.Yield();
