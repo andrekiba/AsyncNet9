@@ -70,7 +70,7 @@ namespace SyncContext;
             Task.Factory.StartNew(() =>
             {
                 Console.WriteLine(TaskScheduler.Current == cesp.ExclusiveScheduler);
-            }, default, TaskCreationOptions.None, cesp.ExclusiveScheduler).Wait();
+            }, CancellationToken.None, TaskCreationOptions.None, cesp.ExclusiveScheduler).Wait();
         }
         
         static async Task DoWork()
@@ -215,12 +215,9 @@ namespace SyncContext;
         }
     }
     
-    internal sealed class MaxConcurrencySynchronizationContext : SynchronizationContext
+    internal sealed class MaxConcurrencySynchronizationContext(int maxConcurrencyLevel) : SynchronizationContext
     {
-        readonly SemaphoreSlim semaphore;
-
-        public MaxConcurrencySynchronizationContext(int maxConcurrencyLevel) =>
-            semaphore = new SemaphoreSlim(maxConcurrencyLevel);
+        readonly SemaphoreSlim semaphore = new(maxConcurrencyLevel);
 
         public override void Post(SendOrPostCallback d, object state) =>
             semaphore.WaitAsync()
@@ -234,7 +231,7 @@ namespace SyncContext;
                     {
                         semaphore.Release();
                     }
-                }, default, TaskContinuationOptions.None, TaskScheduler.Default);
+                }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
 
         public override void Send(SendOrPostCallback d, object state)
         {

@@ -211,87 +211,7 @@ public sealed class AsyncAwait
     }
 
     #endregion
-
-    #region Eliding async-await
-
-    [TestMethod]
-    public async Task TestElidingUsing()
-    {
-        var res1 = await GetWithKeywordsAsync(ObjectsUrl);
-        res1.Should().NotBeNull();
-
-        var act = () => GetElidingKeywordsAsync(ObjectsUrl);
-        await act.Should().ThrowAsync<TaskCanceledException>();
-    }
-
-    static async Task<string> GetWithKeywordsAsync(string url)
-    {
-        using var client = new HttpClient();
-        return await client.GetStringAsync(url);
-    }
-
-    static Task<string> GetElidingKeywordsAsync(string url)
-    {
-        using var client = new HttpClient();
-        return client.GetStringAsync(url);
-    }
-
-    [TestMethod]
-    public async Task TestElidingException()
-    {
-        try
-        {
-            await GetExceptionWithKeywordsAsync();
-        }
-        catch (Exception e)
-        {
-            e.Should().BeOfType<NotImplementedException>();
-        }
-
-        try
-        {
-            await GetExceptionElidingKeywordsAsync();
-        }
-        catch (Exception e)
-        {
-            e.Should().BeOfType<NotImplementedException>();
-        }
-
-        var t1 = GetExceptionWithKeywordsAsync();
-        try
-        {
-            await t1; // Exception thrown here
-        }
-        catch (Exception e)
-        {
-            e.Should().BeOfType<NotImplementedException>();
-        }
-
-        var t2 = GetExceptionElidingKeywordsAsync(); // Exception thrown here
-        try
-        {
-            await t2;
-        }
-        catch (Exception e)
-        {
-            e.Should().BeOfType<NotImplementedException>();
-        }
-    }
-
-    static async Task GetExceptionWithKeywordsAsync()
-    {
-        throw new NotImplementedException();
-        await Task.CompletedTask;
-    }
-
-    static Task GetExceptionElidingKeywordsAsync()
-    {
-        throw new NotImplementedException();
-        return Task.CompletedTask;
-    }
-
-    #endregion
-
+    
     #region Async Void
 
     //se vogliamo essere sicuri di catchare un'eccezione in un metodo async void non c'è una buona soluzione!
@@ -543,17 +463,17 @@ public sealed class AsyncAwait
     [TestMethod]
     public async Task TestComposition()
     {
-        //await DoOperationsConcurrentlyAsync();
-        //var result = await DownloadAllAsync(new HttpClient(), new List<string>{ Google, "http://www.facebook.com"});
-        //await GetFirstToRespondAsync();
-        //await GetFirstToRespondMaybeFaultedAsync();
+        await DoOperationsConcurrentlyAsync();
+        var result = await DownloadAllAsync(new HttpClient(), new List<string>{ ObjectsUrl, ObjectsUrl});
+        await GetFirstToRespondAsync();
+        await GetFirstToRespondMaybeFaultedAsync();
         await ObserveAllExceptionsAsync();
-        //result.Output();
+        result.Output();
     }
 
     #region All
 
-    public async Task DoOperationsConcurrentlyAsync()
+    static async Task DoOperationsConcurrentlyAsync()
     {
         var tasks = new Task<int>[3];
         tasks[0] = DoSomethingAsync();
@@ -590,10 +510,10 @@ public sealed class AsyncAwait
 
     #region Any
 
-    public async Task<int> GetFirstToRespondAsync()
+    static async Task<int> GetFirstToRespondAsync()
     {
         // ad esempio chiama due web service e vede chi risponde prima
-        Task<int>[] tasks = { DoSomethingAsync(), DoSomethingAsync() };
+        Task<int>[] tasks = [DoSomethingAsync(), DoSomethingAsync()];
 
         // attende il primo che risponde
         var firstTask = await Task.WhenAny(tasks);
@@ -610,15 +530,15 @@ public sealed class AsyncAwait
     //inoltre occorre considerare che anche quando il primo task completa
     //gli altri vanno cmq avanti nell'esecuzione e sarebbe quindi buona norma cancellarli
     //altriementi a loro volta verranno completati e abbandonati
-    public async Task GetFirstToRespondMaybeFaultedAsync()
+    static async Task GetFirstToRespondMaybeFaultedAsync()
     {
-        var maybeFoultedTasks = new Task<int>[3];
-        maybeFoultedTasks[0] = DoSomethingAsync();
-        maybeFoultedTasks[1] = ThrowNotImplementedExceptionAsync();
-        maybeFoultedTasks[2] = ThrowInvalidOperationExceptionAsync();
+        var maybeFaultedTasks = new Task<int>[3];
+        maybeFaultedTasks[0] = DoSomethingAsync();
+        maybeFaultedTasks[1] = ThrowNotImplementedExceptionAsync();
+        maybeFaultedTasks[2] = ThrowInvalidOperationExceptionAsync();
 
         // attende il primo che risponde
-        var firstTask = await Task.WhenAny(maybeFoultedTasks);
+        var firstTask = await Task.WhenAny(maybeFaultedTasks);
 
         try
         {
@@ -649,7 +569,7 @@ public sealed class AsyncAwait
         throw new InvalidOperationException();
     }
 
-    async Task ObserveOneExceptionAsync()
+    static async Task ObserveOneExceptionAsync()
     {
         var task1 = ThrowNotImplementedExceptionAsync();
         var task2 = ThrowInvalidOperationExceptionAsync();
@@ -665,7 +585,7 @@ public sealed class AsyncAwait
         }
     }
 
-    async Task ObserveAllExceptionsAsync()
+    static async Task ObserveAllExceptionsAsync()
     {
         var task1 = ThrowNotImplementedExceptionAsync();
         var task2 = ThrowInvalidOperationExceptionAsync();
@@ -678,7 +598,7 @@ public sealed class AsyncAwait
         catch
         {
             AggregateException allExceptions = allTasks.Exception;
-            allExceptions.InnerExceptions.ToList().ForEach(e => e.Output());
+            allExceptions!.InnerExceptions.ToList().ForEach(e => e.Output());
         }
     }
 
@@ -687,26 +607,31 @@ public sealed class AsyncAwait
     #region Process as they complete
 
     [TestMethod]
-    public async Task AsTehyComplete()
+    public async Task TestAsTheyComplete()
     {
-        //await ProcessTasksInOrderAsync();
-
-        await ProcessTasksByCompletionAsync();
+        Debug.WriteLine("2-3-1");
+        await ProcessTasksInOrder();
+        Debug.WriteLine("1-2-3");
+        await ProcessTasksByCompletionOld1();
+        Debug.WriteLine("1-2-3");
+        await ProcessTasksByCompletionOld2();
+        Debug.WriteLine("1-2-3-4-5");
+        await ProcessTasksByCompletion();
     }
 
-    async Task<int> DelayAndReturnAsync(int value)
+    static async Task<int> DelayAndReturnAsync(int value)
     {
         await Task.Delay(TimeSpan.FromSeconds(value));
         return value;
     }
 
     //processati in ordine indipendentemente dall'ordine di completamento
-    async Task ProcessTasksInOrderAsync()
+    static async Task ProcessTasksInOrder()
     {
         var taskA = DelayAndReturnAsync(2);
         var taskB = DelayAndReturnAsync(3);
         var taskC = DelayAndReturnAsync(1);
-        Task<int>[] tasks = { taskA, taskB, taskC };
+        Task<int>[] tasks = [taskA, taskB, taskC];
 
         // Await di ogni task in ordine
         foreach (var task in tasks)
@@ -719,13 +644,13 @@ public sealed class AsyncAwait
     //processati in ordine di completamento
     //rispetto alla soluzione precedente è molto differente perchè in questo caso
     //i task vengono processati in modo concorrente e non uno alla volta
-    async Task ProcessTasksByCompletionAsync()
+    static async Task ProcessTasksByCompletionOld1()
     {
         // Create a sequence of tasks.
         var taskA = DelayAndReturnAsync(2);
         var taskB = DelayAndReturnAsync(3);
         var taskC = DelayAndReturnAsync(1);
-        Task<int>[] tasks = { taskA, taskB, taskC };
+        Task<int>[] tasks = [taskA, taskB, taskC];
 
         var taskQuery = from t in tasks select AwaitAndProcessAsync(t);
         var processingTasks = taskQuery.ToArray();
@@ -750,7 +675,7 @@ public sealed class AsyncAwait
     //se si vuole evitare di processare i task in modo concorrente (perchè ad esempio agiscono su di un oggetto condiviso)
     //è possibile utilizzare un lock asincrono implementato tramite SemaphoreSlim
     //oppure in Nito.AsyncEx esiste un extension method che ordina per completamento (utilizza TaskCompletionSource)
-    async Task UseOrderByCompletionAsync()
+    static async Task ProcessTasksByCompletionOld2()
     {
         // Create a sequence of tasks.
         var taskA = DelayAndReturnAsync(2);
@@ -764,6 +689,25 @@ public sealed class AsyncAwait
             var result = await task;
             result.Output();
         }
+    }
+    
+    static async Task ProcessTasksByCompletion()
+    {
+        var tasks = Enumerable.Range(1, 5)
+            .Select(DelayAndReturnAsync)
+            .ToList();
+
+        // Before
+        // while(tasks.Count > 0)
+        // {
+        //     var completedTask = await Task.WhenAny(tasks);
+        //     tasks.Remove(completedTask);
+        //     Debug.WriteLine(await completedTask);
+        // }
+
+        // .NET 9
+        await foreach (var completedTask in Task.WhenEach(tasks))
+            Debug.WriteLine(await completedTask);
     }
 
     #endregion
@@ -800,15 +744,15 @@ public sealed class AsyncAwait
     {
         var val = 6;
         await Task.Delay(TimeSpan.FromSeconds(1));
-        Debug.WriteLine($"Thread {Thread.CurrentThread.ManagedThreadId} incremento risultato di 10");
+        Debug.WriteLine($"Thread {CurrentManagedThreadId} incremento risultato di 10");
         val += 10;
         progress?.Report(val);
         await Task.Delay(TimeSpan.FromSeconds(1));
-        Debug.WriteLine($"Thread {Thread.CurrentThread.ManagedThreadId} incremento risultato di 10");
+        Debug.WriteLine($"Thread {CurrentManagedThreadId} incremento risultato di 10");
         val += 10;
         progress?.Report(val);
         await Task.Delay(TimeSpan.FromSeconds(1));
-        Debug.WriteLine($"Thread {Thread.CurrentThread.ManagedThreadId} incremento risultato di 10");
+        Debug.WriteLine($"Thread {CurrentManagedThreadId} incremento risultato di 10");
         val += 10;
         progress?.Report(val);
         return val;
@@ -839,7 +783,7 @@ public sealed class AsyncAwait
 
     static async Task Cancellation()
     {
-        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
+        var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
         //cts.CancelAfter(TimeSpan.FromSeconds(2));
         var task = Task.Run(() => SlowMethod(cts.Token), cts.Token);
 
@@ -897,7 +841,7 @@ public sealed class AsyncAwait
         }
     }
 
-    async Task CancelableMethodAsync(CancellationToken token)
+    static async Task CancelableMethodAsync(CancellationToken token)
     {
         await Task.Delay(TimeSpan.FromSeconds(1), token);
     }
@@ -915,12 +859,12 @@ public sealed class AsyncAwait
         {
             var r2 = await GetStringWithAsyncAwait1(ObjectsUrl);
 
-            //var r3 = await GetStringWithoutAsyncAwait1(ObjectsUrl);
+            var r3 = await GetStringWithoutAsyncAwait1(ObjectsUrl);
 
-            //var task1 = GetStringWithAsyncAwait2();
-            //var r4 = await task1; //exception thrown here
+            var task1 = GetStringWithAsyncAwait2();
+            var r4 = await task1; //exception thrown here
 
-            var task2 = GetStringWithoutAsyncAwait2(); //excetpion thrown here
+            var task2 = GetStringWithoutAsyncAwait2(); //exception thrown here
             var r5 = await task2;
         }
         catch (Exception e)
@@ -951,74 +895,25 @@ public sealed class AsyncAwait
     }
 
     //oppure se c'è codice che può generare eccezioni
-    public async Task<string> GetStringWithAsyncAwait2()
+    static async Task<string> GetStringWithAsyncAwait2()
     {
         var client = new HttpClient();
-        const string url = ObjectsUrl;
         //codice che potrebbe causare eccezione
-        if (url.EndsWith("it"))
+        if (ObjectsUrl.EndsWith("objects"))
             throw new InvalidOperationException("ciao!");
 
-        return await client.GetStringAsync(url);
+        return await client.GetStringAsync(ObjectsUrl);
     }
 
-    public Task<string> GetStringWithoutAsyncAwait2()
+    static Task<string> GetStringWithoutAsyncAwait2()
     {
         var client = new HttpClient();
-        const string url = ObjectsUrl;
         //codice che potrebbe causare eccezione
-        if (url.EndsWith("it"))
+        if (ObjectsUrl.EndsWith("objects"))
             throw new InvalidOperationException("ciao!");
 
-        return client.GetStringAsync(url);
+        return client.GetStringAsync(ObjectsUrl);
     }
-
-    #endregion
-
-    #region Guidelines
-
-    /*
-    Old                     New                                 Description
-
-    task.Wait	            await task	                        Wait/await for a task to complete
-
-    task.Result	            await task	                        Get the result of a completed task
-
-    Task.WaitAny	        await Task.WhenAny	                Wait/await for one of a collection of tasks to complete
-
-    Task.WaitAll	        await Task.WhenAll	                Wait/await for every one of a collection of tasks to complete
-
-    Thread.Sleep	        await Task.Delay	                Wait/await for a period of time
-
-    Task constructor	    Task.Run or TaskFactory.StartNew	Create a code-based task
-    */
-
-    #endregion
-
-    #region Mapping
-
-    /*
-
-    Type                                    Lambda                                                  Parameters	    Return Value
-
-    Action	                                () => { }	                                            None	        None
-    Func<Task>	                            async () => { await Task.Yield(); }	                    None	        None
-
-    Func<TResult>	                        () => { return 6; }	                                    None	        TResult
-    Func<Task<TResult>>	                    async () => { await Task.Yield(); return 6; }	        None	        TResult
-
-    Action<TArg1>	                        x => { }	                                            TArg1	        None
-    Func<TArg1, Task>	                    async x => { await Task.Yield(); }	                    TArg1	        None
-
-    Func<TArg1, TResult>	                x => { return 6; }	                                    TArg1	        TResult
-    Func<TArg1, Task<TResult>>	            async x => { await Task.Yield(); return 6; }	        TArg1	        TResult
-
-    Action<TArg1, TArg2>	                (x, y) => { }	                                        TArg1, TArg2	None
-    Func<TArg1, TArg2, Task>	            async (x, y) => { await Task.Yield(); }	                TArg1, TArg2	None
-
-    Func<TArg1, TArg2, TResult>	            (x, y) => { return 6; }	                                TArg1, TArg2	TResult
-    Func<TArg1, TArg2, Task<TResult>>	    async (x, y) => { await Task.Yield(); return 6; }	    TArg1, TArg2	TResult
-    */
 
     #endregion
 
@@ -1038,23 +933,23 @@ public sealed class AsyncAwait
     public async Task TestValueTask(int value)
     {
         //N.B. attenzione che i value task si awaitano una sola volta!
-        var result = await CalcualteNumberAsync(value);
+        var result = await CalculateNumberAsync(value);
         result.Output();
 
         //se occorre fare qualcosa di più complesso la prima cosa da fare è trasformare il ValueTask in un Task
-        var task = CalcualteNumberAsync(value).AsTask();
+        var task = CalculateNumberAsync(value).AsTask();
         //... altro lavoro concorrente
         var n1 = await task;
         var n2 = await task;
 
         //una volta trasformati si possono anche awaitare in modo concorrente
-        var task1 = CalcualteNumberAsync(value).AsTask();
-        var task2 = CalcualteNumberAsync(value).AsTask();
+        var task1 = CalculateNumberAsync(value).AsTask();
+        var task2 = CalculateNumberAsync(value).AsTask();
         var results = await Task.WhenAll(task1, task2);
     }
 
     //è possibile implementare un metodo che ritorna un ValueTask in modo normale con async await
-    public ValueTask<int> CalcualteNumberAsync(int value)
+    static ValueTask<int> CalculateNumberAsync(int value)
     {
         //si può costruire un ValueTask passando un Task come parametro nel suo costruttore
         return value > 2 ? new ValueTask<int>(value * 2) : new ValueTask<int>(DoSomethingAsync());
@@ -1141,13 +1036,10 @@ public sealed class AsyncAwait
     //C# 8, .Net Core 3.1
 
     [TestMethod]
-    public async Task Stream()
+    public async Task TestStream()
     {
-        //Trace.Listeners.Add(new ConsoleTraceListener());
-
         await foreach (var n in GetNumbers())
         {
-            //Trace.WriteLine(n);
             Debug.WriteLine(n);
         }
     }
@@ -1160,6 +1052,53 @@ public sealed class AsyncAwait
             yield return n;
         }
     }
+
+    #endregion
+    
+    #region Guidelines
+
+    /*
+    Old                     New                                 Description
+
+    task.Wait	            await task	                        Wait/await for a task to complete
+
+    task.Result	            await task	                        Get the result of a completed task
+
+    Task.WaitAny	        await Task.WhenAny	                Wait/await for one of a collection of tasks to complete
+
+    Task.WaitAll	        await Task.WhenAll	                Wait/await for every one of a collection of tasks to complete
+
+    Thread.Sleep	        await Task.Delay	                Wait/await for a period of time
+
+    Task constructor	    Task.Run or TaskFactory.StartNew	Create a code-based task
+    */
+
+    #endregion
+
+    #region Mapping
+
+    /*
+
+    Type                                    Lambda                                                  Parameters	    Return Value
+
+    Action	                                () => { }	                                            None	        None
+    Func<Task>	                            async () => { await Task.Yield(); }	                    None	        None
+
+    Func<TResult>	                        () => { return 6; }	                                    None	        TResult
+    Func<Task<TResult>>	                    async () => { await Task.Yield(); return 6; }	        None	        TResult
+
+    Action<TArg1>	                        x => { }	                                            TArg1	        None
+    Func<TArg1, Task>	                    async x => { await Task.Yield(); }	                    TArg1	        None
+
+    Func<TArg1, TResult>	                x => { return 6; }	                                    TArg1	        TResult
+    Func<TArg1, Task<TResult>>	            async x => { await Task.Yield(); return 6; }	        TArg1	        TResult
+
+    Action<TArg1, TArg2>	                (x, y) => { }	                                        TArg1, TArg2	None
+    Func<TArg1, TArg2, Task>	            async (x, y) => { await Task.Yield(); }	                TArg1, TArg2	None
+
+    Func<TArg1, TArg2, TResult>	            (x, y) => { return 6; }	                                TArg1, TArg2	TResult
+    Func<TArg1, TArg2, Task<TResult>>	    async (x, y) => { await Task.Yield(); return 6; }	    TArg1, TArg2	TResult
+    */
 
     #endregion
 }
