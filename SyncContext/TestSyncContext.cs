@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace SyncContext;
 
@@ -24,17 +25,20 @@ namespace SyncContext;
         }
         static void RestOfTheMethod(int value)
         {
-            Console.WriteLine(value);
+            Debug.WriteLine(value);
         }
         
         [TestMethod]
         public void UsingSyncContext()
         {
             var task = DoSomethingAsync();
+            var scheduler = SynchronizationContext.Current != null 
+                ? TaskScheduler.FromCurrentSynchronizationContext() 
+                : TaskScheduler.Default;
             task.ContinueWith(t =>
             {
                 RestOfTheMethod(t.Result);
-            }, TaskScheduler.FromCurrentSynchronizationContext());
+            }, scheduler);
         }
         
         [TestMethod]
@@ -88,14 +92,14 @@ namespace SyncContext;
         }
         
         //use ThreadPool and then post back to the prev context
-        public void DoWork(Action worker, Action completion)
+        public void DoWork(Action work, Action completion)
         {
             var sc = SynchronizationContext.Current;
             ThreadPool.QueueUserWorkItem(_ =>
             {
                 try
                 {
-                    worker();
+                    work();
                 }
                 finally
                 {
@@ -115,9 +119,9 @@ namespace SyncContext;
     {
         public static void Run(Func<Task> func)
         {
-        ArgumentNullException.ThrowIfNull(func);
+            ArgumentNullException.ThrowIfNull(func);
 
-        var prevCtx = SynchronizationContext.Current;
+            var prevCtx = SynchronizationContext.Current;
             try
             {
                 var syncCtx = new SingleThreadSynchronizationContext();

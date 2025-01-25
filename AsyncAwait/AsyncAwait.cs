@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Net;
 using AsyncAwaitBestPractices;
 using FluentAssertions;
@@ -255,7 +255,6 @@ public sealed class AsyncAwait
     static async void AvoidAsyncVoid()
     {
         //anche mettendo la try-catch dentro al metodo le cose non si risolvono!
-
         try
         {
             Debug.WriteLine("Sono dentro AvoidAsyncVoid");
@@ -305,7 +304,7 @@ public sealed class AsyncAwait
 
     static async Task Deadlock()
     {
-        //richiedere Result significa bloccare in modo sincorono il chiamante in attesa del risultato
+        //richiedere Result significa bloccare in modo sincrono il chiamante in attesa del risultato
         //se SynchronizationContext ammette un singolo thread accade che il thread rimane bloccato in attesa
         //e non può essere richiamato quando il Task è completo 
 
@@ -332,7 +331,7 @@ public sealed class AsyncAwait
     #region ConfigureAwait
 
     //occorre valutare se il contesto è importante quando viene eseguita la continuazione oppure no
-    //questo perchè la macchina a stati ha un costo di gestione (circa 100 byte per ogni await)
+    //questo perchè la macchina a stati ha un costo di gestione (circa 100 byte per ogni await, 80 da .NET 8)
     //inoltre una stima plausibile può essere che circa 100 continuazioni al secondo possono essere ok per UI thread
     //di più comincia ad essere problematico a livello di performance (ad esempio skipped frames)
 
@@ -366,6 +365,8 @@ public sealed class AsyncAwait
     {
         AsyncContext.Run(async () =>
         {
+            Debug.WriteLine($"SynchronizationContext: {SynchronizationContext.Current?.ToString() ?? "null"}");
+            
             var httpclient = new HttpClient();
             await httpclient.GetStringAsync(ObjectsUrl);
 
@@ -385,6 +386,33 @@ public sealed class AsyncAwait
 
             Debug.WriteLine($"Thread {CurrentManagedThreadId}");
         });
+    }
+    
+    [TestMethod]
+    public void TestThreadSwitchWithContext()
+    {
+        AsyncContext.Run(async () =>
+        {
+            Debug.WriteLine($"SynchronizationContext: {SynchronizationContext.Current?.ToString() ?? "null"}");
+            Debug.WriteLine($"Thread: {CurrentManagedThreadId}");
+
+            await Task.Delay(10);
+
+            Debug.WriteLine($"SynchronizationContext: {SynchronizationContext.Current?.ToString() ?? "null"}");
+            Debug.WriteLine($"Thread: {CurrentManagedThreadId}");
+        });
+    }
+    
+    [TestMethod]
+    public async Task TestThreadSwitchWithoutContext()
+    {
+        Debug.WriteLine($"SynchronizationContext: {SynchronizationContext.Current?.ToString() ?? "null"}");
+        Debug.WriteLine($"Thread: {CurrentManagedThreadId}");
+
+        await Task.Delay(10);
+
+        Debug.WriteLine($"SynchronizationContext: {SynchronizationContext.Current?.ToString() ?? "null"}");
+        Debug.WriteLine($"Thread: {CurrentManagedThreadId}");
     }
 
     #endregion
@@ -653,7 +681,7 @@ public sealed class AsyncAwait
         Task<int>[] tasks = [taskA, taskB, taskC];
 
         var taskQuery = from t in tasks select AwaitAndProcessAsync(t);
-        var processingTasks = taskQuery.ToArray();
+        var processingTasks = taskQuery.ToList();
 
         //Task[] processingTasks = tasks.Select(async t =>
         //{
@@ -783,7 +811,7 @@ public sealed class AsyncAwait
 
     static async Task Cancellation()
     {
-        var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
+        var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
         //cts.CancelAfter(TimeSpan.FromSeconds(2));
         var task = Task.Run(() => SlowMethod(cts.Token), cts.Token);
 
@@ -801,6 +829,7 @@ public sealed class AsyncAwait
     {
         for (var i = 0; i < 500000; i++)
         {
+            Thread.Sleep(10);
             if (i % 1000 == 0)
                 cancellationToken.ThrowIfCancellationRequested();
         }
@@ -812,7 +841,7 @@ public sealed class AsyncAwait
         await IssueCancelRequestAsync();
     }
 
-    async Task IssueCancelRequestAsync()
+    static async Task IssueCancelRequestAsync()
     {
         using var cts = new CancellationTokenSource();
         var task = CancelableMethodAsync(cts.Token);
@@ -821,7 +850,7 @@ public sealed class AsyncAwait
         //triggero la cancellazione, nella realtà sarebbe un'altro punto del codice con un altro metodo
         //quando una CancellationTokenSource viene cancellata lo è per sempre
         //se ne ho bisogno un'altra occorre creare una nuova istanza
-        cts.Cancel();
+        await cts.CancelAsync();
 
         //attende in asincrono che l'operazione finisca
         try
@@ -830,11 +859,12 @@ public sealed class AsyncAwait
             //se arrivo qui l'operazione è stata completata con successo
             //prima che la cancellazione possa intervenire
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException e)
         {
             //se arrivo qui l'operazione è stata cancellata prima di finire
+            Debug.WriteLine(e.Message);
         }
-        catch (Exception)
+        catch (Exception e)
         {
             //se arrivo qui l'operazione è fallita per un altro motivo
             throw;
