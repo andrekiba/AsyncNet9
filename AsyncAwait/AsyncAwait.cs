@@ -50,8 +50,8 @@ public sealed class AsyncAwait
 
         var result = 6;
 
-        await Task.Delay(TimeSpan.FromSeconds(2));
-        //await Task.Delay(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
+        //await Task.Delay(TimeSpan.FromSeconds(2));
+        await Task.Delay(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
 
         Debug.WriteLine($"Thread {CurrentManagedThreadId} incremento risultato di 10");
         result += 10;
@@ -288,7 +288,7 @@ public sealed class AsyncAwait
     #region Deadlock
 
     [TestMethod]
-    [Ignore]
+    //[Ignore]
     public void TestDeadlock()
     {
         AsyncContext.Run(async () =>
@@ -375,12 +375,14 @@ public sealed class AsyncAwait
             await DoSomethingAsync();
             //await DoSomethingAsync().ConfigureAwait(true);
             //await DoSomethingAsync().ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext);
-            //await DoSomethingAsync().ConfigureAwait(ConfigureAwaitOptions.None);
-            await DoSomethingAsync().ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+            
+            //await DoSomethingAsync().ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+            //await Task.Yield();
 
             Debug.WriteLine($"SynchronizationContext: {SynchronizationContext.Current?.ToString() ?? "null"}");
 
             await DoSomethingAsync().ConfigureAwait(false);
+            await DoSomethingAsync().ConfigureAwait(ConfigureAwaitOptions.None);
 
             Debug.WriteLine($"SynchronizationContext: {SynchronizationContext.Current?.ToString() ?? "null"}");
 
@@ -396,7 +398,7 @@ public sealed class AsyncAwait
             Debug.WriteLine($"SynchronizationContext: {SynchronizationContext.Current?.ToString() ?? "null"}");
             Debug.WriteLine($"Thread: {CurrentManagedThreadId}");
 
-            await Task.Delay(10);
+            await Task.Delay(10).ConfigureAwait(false);
 
             Debug.WriteLine($"SynchronizationContext: {SynchronizationContext.Current?.ToString() ?? "null"}");
             Debug.WriteLine($"Thread: {CurrentManagedThreadId}");
